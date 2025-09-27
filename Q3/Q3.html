@@ -1,13 +1,163 @@
 <!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Board Game Ratings Line Chart</title>
+    <script src="../lib/d3.v5.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      path.line {
+        fill: none;
+        stroke-width: 1.5px;
+      }
+      text {
+        font-size: 10px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="svg-a" width="1200" height="700"></svg>
+    <script>
+      const svg = d3.select("svg"),
+        width = 1000;
+      (height = 600), (margin = { top: 50, right: 100, bottom: 50, left: 100 });
 
-<head>
-  <title>Line Charts</title>
-  <meta charset="utf-8">
+      // Chart title
+      svg
+        .append("text")
+        .attr("id", "title-a")
+        .attr("x", (width + margin.left + margin.right) / 2)
+        .attr("y", margin.top / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Number of Ratings 2016–2020");
 
-  <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+      // Main plot group
+      const g = svg
+        .append("g")
+        .attr("id", "plot-a")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-</head>
+      const parseDate = d3.timeParse("%Y-%m-%d");
 
-<body>
-  <div id='signature'>gburdell3</div>
-</body>
+      const games = [
+        "Catan=count",
+        "Dominion=count",
+        "Codenames=count",
+        "Terraforming Mars=count",
+        "Gloomhaven=count",
+        "Magic: The Gathering=count",
+        "Dixit=count",
+        "Monopoly=count",
+      ];
+
+      d3.csv("boardgame_ratings.csv").then((data) => {
+        data.forEach((d) => {
+          d.date = parseDate(d.date);
+          games.forEach((gName) => {
+            d[gName] = +d[gName];
+          });
+        });
+
+        const x = d3
+          .scaleTime()
+          .domain(d3.extent(data, (d) => d.date))
+          .range([0, width]);
+
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(data, (d) => d3.max(games, (gName) => d[gName]))])
+          .nice()
+          .range([height, 0]);
+
+        const color = d3
+          .scaleOrdinal(d3.schemeCategory10)
+          .domain(games.map((gName) => gName.split("=")[0]));
+
+        const line = d3
+          .line()
+          .defined((d) => !isNaN(d.value))
+          .x((d) => x(d.date))
+          .y((d) => y(d.value));
+
+        const series = games.map((name) => ({
+          name: name.split("=")[0],
+          values: data.map((d) => ({ date: d.date, value: d[name] })),
+        }));
+
+        // Lines group
+        const gLines = g.append("g").attr("id", "lines-a");
+
+        // Draw lines
+        gLines
+          .selectAll(".line")
+          .data(series)
+          .enter()
+          .append("path")
+          .attr("class", "line")
+          .attr("stroke", (d) => color(d.name))
+          .attr("d", (d) => line(d.values));
+
+        // Add labels at end of lines
+        gLines
+          .selectAll(".label")
+          .data(series)
+          .enter()
+          .append("text")
+          .datum((d) => ({ name: d.name, last: d.values[d.values.length - 1] }))
+          .attr(
+            "transform",
+            (d) => `translate(${x(d.last.date)},${y(d.last.value)})`
+          )
+          .attr("x", 5)
+          .attr("dy", "0.35em")
+          .style("fill", (d) => color(d.name))
+          .text((d) => d.name);
+
+        // X-axis group
+        const gXAxis = g
+          .append("g")
+          .attr("id", "x-axis-a")
+          .attr("transform", `translate(0,${height})`);
+
+        gXAxis.call(
+          d3
+            .axisBottom(x)
+            .ticks(d3.timeMonth.every(3))
+            .tickFormat(d3.timeFormat("%b %y"))
+        );
+        gXAxis
+          .append("text")
+          .attr("x", width / 2)
+          .attr("y", margin.bottom - 10)
+          .attr("text-anchor", "middle")
+          .text("Month");
+
+        // Y-axis group
+        const gYAxis = g.append("g").attr("id", "y-axis-a");
+        gYAxis.call(d3.axisLeft(y));
+
+        // Y-axis label
+        svg
+          .append("text")
+          .attr("id", "y-axis-label-a")
+          .attr("transform", "rotate(-90)")
+          .attr("x", -(height + margin.top + margin.bottom) / 2)
+          .attr("y", 40)
+          .attr("text-anchor", "middle")
+          .text("Num of Ratings");
+
+        svg
+          .append("text")
+          .attr("id", "credit")
+          .attr("x", 1200)
+          .attr("y", 20)
+          .attr("text-anchor", "end")
+          .text("gburdell3");
+      });
+    </script>
+  </body>
+</html>
