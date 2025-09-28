@@ -27,7 +27,11 @@
       .node circle.pinned {
         stroke: #000;
         stroke-width: 3px;
-        fill: orange;
+        fill: yellow;
+      }
+
+      .node circle.dragging {
+        fill: yellow;
       }
 
       text {
@@ -57,7 +61,6 @@
       })
         .then(function (data) {
           var links = data;
-
           var nodes = {};
 
           links.forEach((l) => {
@@ -71,18 +74,17 @@
             l.source.degree++;
             l.target.degree++;
 
-            l.type = l.value == 1 ? "dashed" : "solid";
+            l.type = l.value === 1 ? "dashed" : "solid";
           });
 
           var width = 1200,
             height = 700;
 
-          const degree = d3.extent(d3.values(nodes), (d) => d.degree);
-          const radius = d3
-            .scaleLinear()
-            .domain(d3.extent(degree))
-            .range([5, 20]);
-          const color = d3.scaleSequential(d3.interpolateBlues).domain(degree);
+          const degreeExtent = d3.extent(d3.values(nodes), (d) => d.degree);
+          const radius = d3.scaleLinear().domain(degreeExtent).range([5, 20]);
+          const color = d3
+            .scaleSequential(d3.interpolateBlues)
+            .domain(degreeExtent);
 
           var force = d3
             .forceSimulation()
@@ -107,7 +109,7 @@
             .attr("x", width - 10)
             .attr("y", 20)
             .attr("text-anchor", "end")
-            .text("gburdell3");
+            .text("npallapangkul3 ");
 
           // add the links
           var path = svg
@@ -116,9 +118,7 @@
             .data(links)
             .enter()
             .append("path")
-            .attr("class", function (d) {
-              return "link " + d.type;
-            });
+            .attr("class", (d) => "link " + d.type);
 
           // define the nodes
           var node = svg
@@ -146,9 +146,7 @@
           // add the nodes
           node
             .append("circle")
-            .attr("id", function (d) {
-              return d.name.replace(/\s+/g, "").toLowerCase();
-            })
+            .attr("id", (d) => d.name.replace(/\s+/g, "").toLowerCase())
             .attr("r", (d) => radius(d.degree))
             .attr("fill", (d) => color(d.degree));
 
@@ -190,6 +188,7 @@
             if (!d3.event.active) force.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
+            d3.select(this).select("circle").classed("dragging", true);
           }
 
           function dragged(d) {
@@ -206,6 +205,7 @@
               d.fx = null;
               d.fy = null;
             }
+            d3.select(this).select("circle").classed("dragging", false);
           }
         })
         .catch(function (error) {
