@@ -16,17 +16,30 @@
         font-size: 10px;
         pointer-events: none;
       }
+      .label {
+        font-size: 12px;
+        text-anchor: middle;
+        fill: black;
+      }
+      #signature {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
     <svg id="svg-a" width="1200" height="700"></svg>
+    <svg id="svg-c-1" width="1200" height="700"></svg>
+    <svg id="svg-c-2" width="1200" height="700"></svg>
+    <svg id="svg-b" width="1200" height="700"></svg>
     <script>
-      const svg = d3.select("svg"),
+      const svgA = d3.select("#svg-a"),
         width = 1000;
       (height = 600), (margin = { top: 50, right: 100, bottom: 50, left: 100 });
 
-      // Chart title
-      svg
+      svgA
         .append("text")
         .attr("id", "title-a")
         .attr("x", (width + margin.left + margin.right) / 2)
@@ -35,8 +48,7 @@
         .style("font-size", "16px")
         .text("Number of Ratings 2016–2020");
 
-      // Main plot group
-      const g = svg
+      const gA = svgA
         .append("g")
         .attr("id", "plot-a")
         .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -88,11 +100,9 @@
           values: data.map((d) => ({ date: d.date, value: d[name] })),
         }));
 
-        // Lines group
-        const gLines = g.append("g").attr("id", "lines-a");
+        const gLinesA = gA.append("g").attr("id", "lines-a");
 
-        // Draw lines
-        gLines
+        gLinesA
           .selectAll(".line")
           .data(series)
           .enter()
@@ -101,8 +111,7 @@
           .attr("stroke", (d) => color(d.name))
           .attr("d", (d) => line(d.values));
 
-        // Add labels at end of lines
-        gLines
+        gLinesA
           .selectAll(".label")
           .data(series)
           .enter()
@@ -117,47 +126,447 @@
           .style("fill", (d) => color(d.name))
           .text((d) => d.name);
 
-        // X-axis group
-        const gXAxis = g
+        const gXAxisA = gA
           .append("g")
           .attr("id", "x-axis-a")
           .attr("transform", `translate(0,${height})`);
 
-        gXAxis.call(
+        gXAxisA.call(
           d3
             .axisBottom(x)
             .ticks(d3.timeMonth.every(3))
             .tickFormat(d3.timeFormat("%b %y"))
         );
-        gXAxis
+        gXAxisA
           .append("text")
           .attr("x", width / 2)
           .attr("y", margin.bottom - 10)
           .attr("text-anchor", "middle")
+          .attr("class", "label")
           .text("Month");
 
-        // Y-axis group
-        const gYAxis = g.append("g").attr("id", "y-axis-a");
-        gYAxis.call(d3.axisLeft(y));
+        const gYAxisA = gA.append("g").attr("id", "y-axis-a");
+        gYAxisA.call(d3.axisLeft(y));
 
-        // Y-axis label
-        svg
+        svgA
           .append("text")
           .attr("id", "y-axis-label-a")
           .attr("transform", "rotate(-90)")
           .attr("x", -(height + margin.top + margin.bottom) / 2)
           .attr("y", 40)
-          .attr("text-anchor", "middle")
+          .attr("class", "label")
           .text("Num of Ratings");
-
-        svg
-          .append("text")
-          .attr("id", "credit")
-          .attr("x", 1200)
-          .attr("y", 20)
-          .attr("text-anchor", "end")
-          .text("gburdell3");
       });
     </script>
+    <script>
+      const svgB = d3.select("#svg-b"),
+        widthB = 1000,
+        heightB = 600,
+        marginB = { top: 50, right: 120, bottom: 50, left: 100 };
+
+      svgB
+        .append("text")
+        .attr("id", "title-b")
+        .attr("x", (widthB + marginB.left + marginB.right) / 2)
+        .attr("y", marginB.top / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Number of Ratings 2016–2020 with Rankings");
+
+      const gB = svgB
+        .append("g")
+        .attr("id", "plot-b")
+        .attr("transform", `translate(${marginB.left},${marginB.top})`);
+
+      const rankGames = [
+        "Catan",
+        "Codenames",
+        "Terraforming Mars",
+        "Gloomhaven",
+      ];
+
+      d3.csv("boardgame_ratings.csv").then((data) => {
+        data.forEach((d) => {
+          d.date = parseDate(d.date);
+          games.forEach((g) => (d[g] = +d[g]));
+          rankGames.forEach((g) => (d[g + "=rank"] = +d[g + "=rank"]));
+        });
+
+        const x = d3
+          .scaleTime()
+          .domain(d3.extent(data, (d) => d.date))
+          .range([0, widthB]);
+
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(data, (d) => d3.max(games, (g) => d[g]))])
+          .nice()
+          .range([heightB, 0]);
+
+        const color = d3
+          .scaleOrdinal(d3.schemeCategory10)
+          .domain(games.map((g) => g.split("=")[0]));
+
+        const line = d3
+          .line()
+          .defined((d) => !isNaN(d.value))
+          .x((d) => x(d.date))
+          .y((d) => y(d.value));
+
+        const series = games.map((name) => ({
+          name: name.split("=")[0],
+          values: data.map((d) => ({ date: d.date, value: d[name] })),
+        }));
+
+        const gLinesB = gB.append("g").attr("id", "lines-b");
+
+        gLinesB
+          .selectAll(".line")
+          .data(series)
+          .enter()
+          .append("path")
+          .attr("class", "line")
+          .attr("fill", "none")
+          .attr("stroke-width", 1.5)
+          .attr("stroke", (d) => color(d.name))
+          .attr("d", (d) => line(d.values));
+
+        gLinesB
+          .selectAll(".label")
+          .data(series)
+          .enter()
+          .append("text")
+          .datum((d) => ({ name: d.name, last: d.values[d.values.length - 1] }))
+          .attr(
+            "transform",
+            (d) => `translate(${x(d.last.date)},${y(d.last.value)})`
+          )
+          .attr("x", 5)
+          .attr("dy", "0.35em")
+          .style("fill", (d) => color(d.name))
+          .text((d) => d.name);
+
+        const gXAxisB = gB
+          .append("g")
+          .attr("id", "x-axis-b")
+          .attr("transform", `translate(0,${heightB})`)
+          .call(
+            d3
+              .axisBottom(x)
+              .ticks(d3.timeMonth.every(3))
+              .tickFormat(d3.timeFormat("%b %y"))
+          );
+        gXAxisB
+          .append("text")
+          .attr("x", widthB / 2)
+          .attr("y", marginB.bottom - 10)
+          .attr("class", "label")
+          .text("Month");
+
+        const gYAxisB = gB
+          .append("g")
+          .attr("id", "y-axis-b")
+          .call(d3.axisLeft(y));
+
+        gYAxisB
+          .append("text")
+          .attr("x", -heightB / 2)
+          .attr("y", -60)
+          .attr("transform", "rotate(-90)")
+          .attr("text-anchor", "middle")
+          .attr("class", "label")
+          .text("Num of Ratings");
+
+        const gSymbolsB = gB.append("g").attr("id", "symbols-b");
+        const tickDates = x.ticks(d3.timeMonth.every(3));
+
+        rankGames.forEach((gName) => {
+          const vals = data
+            .filter((d) => tickDates.some((td) => +td === +d.date))
+            .map((d) => ({
+              date: d.date,
+              rating: d[gName + "=count"],
+              rank: d[gName + "=rank"],
+            }));
+
+          const group = gSymbolsB
+            .selectAll(`.sym-${gName}`)
+            .data(vals)
+            .enter()
+            .append("g")
+            .attr("class", `sym-${gName}`);
+
+          group
+            .append("circle")
+            .attr("cx", (d) => x(d.date))
+            .attr("cy", (d) => y(d.rating))
+            .attr("r", 12)
+            .attr("fill", color(gName));
+
+          group
+            .append("text")
+            .attr("x", (d) => x(d.date))
+            .attr("y", (d) => y(d.rating))
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("fill", "white")
+            .style("font-size", "9px")
+            .text((d) => d.rank);
+        });
+
+        const gLegendB = svgB
+          .append("g")
+          .attr("id", "legend-b")
+          .attr(
+            "transform",
+            `translate(${widthB + marginB.left + 10},${heightB - 40})`
+          );
+        gLegendB
+          .append("circle")
+          .attr("r", 12)
+          .attr("fill", "#000")
+          .attr("cx", 0)
+          .attr("cy", 0);
+
+        gLegendB
+          .append("text")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("dy", "0.35em")
+          .attr("text-anchor", "middle")
+          .style("fill", "white")
+          .style("font-size", "9px")
+          .text("rank");
+
+        gLegendB
+          .append("text")
+          .attr("x", -60)
+          .attr("y", 24)
+          .text("BoardGameGeek Rank")
+          .style("font-size", "12px");
+      });
+    </script>
+    <script>
+      const widthC = 1000,
+        heightC = 600,
+        marginC = { top: 50, right: 120, bottom: 50, left: 100 };
+
+      d3.csv("boardgame_ratings.csv").then((data) => {
+        data.forEach((d) => {
+          d.date = parseDate(d.date);
+          games.forEach((g) => (d[g] = +d[g]));
+          rankGames.forEach((g) => (d[g + "=rank"] = +d[g + "=rank"]));
+        });
+
+        const x = d3
+          .scaleTime()
+          .domain(d3.extent(data, (d) => d.date))
+          .range([0, widthC]);
+        const color = d3
+          .scaleOrdinal(d3.schemeCategory10)
+          .domain(games.map((g) => g.split("=")[0]));
+        const line = d3
+          .line()
+          .defined((d) => !isNaN(d.value))
+          .x((d) => x(d.date))
+          .y((d, i, arr) => d.yScale(d.value));
+        const series = games.map((name) => ({
+          name: name.split("=")[0],
+          values: data.map((d) => ({ date: d.date, value: d[name] })),
+        }));
+        const tickDates = x.ticks(d3.timeMonth.every(3));
+
+        function drawChart(
+          svgId,
+          chartTitle,
+          yScale,
+          yAxisId,
+          xAxisId,
+          linesId,
+          symbolsId,
+          legendId
+        ) {
+          const svg = d3.select("#" + svgId);
+          svg
+            .append("text")
+            .attr("id", "title-" + svgId)
+            .attr("x", (widthC + marginC.left + marginC.right) / 2)
+            .attr("y", marginC.top / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .text(chartTitle);
+
+          const gPlot = svg
+            .append("g")
+            .attr("id", "plot-" + svgId)
+            .attr("transform", `translate(${marginC.left},${marginC.top})`);
+
+          const seriesWithScale = series.map((s) => ({
+            name: s.name,
+            values: s.values.map((v) =>
+              Object.assign({}, v, { yScale: yScale })
+            ),
+          }));
+
+          const gLines = gPlot.append("g").attr("id", "lines-" + svgId);
+          gLines
+            .selectAll(".line")
+            .data(seriesWithScale)
+            .enter()
+            .append("path")
+            .attr("class", "line")
+            .attr("fill", "none")
+            .attr("stroke-width", 1.5)
+            .attr("stroke", (d) => color(d.name))
+            .attr("d", (d) => line(d.values));
+          gLines
+            .selectAll(".label")
+            .data(seriesWithScale)
+            .enter()
+            .append("text")
+            .datum((d) => ({
+              name: d.name,
+              last: d.values[d.values.length - 1],
+            }))
+            .attr(
+              "transform",
+              (d) => `translate(${x(d.last.date)},${yScale(d.last.value)})`
+            )
+            .attr("x", 5)
+            .attr("dy", "0.35em")
+            .style("fill", (d) => color(d.name))
+            .text((d) => d.name);
+
+          const gXAxis = gPlot
+            .append("g")
+            .attr("id", xAxisId)
+            .attr("transform", `translate(0,${heightC})`)
+            .call(
+              d3
+                .axisBottom(x)
+                .ticks(d3.timeMonth.every(3))
+                .tickFormat(d3.timeFormat("%b %y"))
+            );
+          gXAxis
+            .append("text")
+            .attr("x", widthC / 2)
+            .attr("y", marginC.bottom - 10)
+            .attr("text-anchor", "middle")
+            .attr("class", "label")
+            .text("Month");
+
+          const gYAxis = gPlot
+            .append("g")
+            .attr("id", yAxisId)
+            .call(d3.axisLeft(yScale));
+          gYAxis
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -heightC / 2)
+            .attr("y", -60)
+            .attr("class", "label")
+            .text("Num of Ratings");
+
+          const gSymbols = gPlot.append("g").attr("id", symbolsId);
+          rankGames.forEach((gName) => {
+            const vals = data
+              .filter((d) => tickDates.some((td) => +td === +d.date))
+              .map((d) => ({
+                date: d.date,
+                rating: d[gName + "=count"],
+                rank: d[gName + "=rank"],
+              }));
+            const grp = gSymbols
+              .selectAll(".sym-" + gName + "-" + svgId)
+              .data(vals)
+              .enter()
+              .append("g")
+              .attr("class", "sym-" + gName + "-" + svgId);
+            grp
+              .append("circle")
+              .attr("cx", (d) => x(d.date))
+              .attr("cy", (d) => yScale(d.rating))
+              .attr("r", 12)
+              .attr("fill", color(gName));
+            grp
+              .append("text")
+              .attr("x", (d) => x(d.date))
+              .attr("y", (d) => yScale(d.rating))
+              .attr("dy", "0.35em")
+              .attr("text-anchor", "middle")
+              .style("fill", "white")
+              .style("font-size", "9px")
+              .text((d) => d.rank);
+          });
+
+          const gLegend = svg
+            .append("g")
+            .attr("id", legendId)
+            .attr(
+              "transform",
+              `translate(${widthC + marginC.left + 10},${heightC - 40})`
+            );
+          gLegend
+            .append("circle")
+            .attr("r", 12)
+            .attr("fill", "#000")
+            .attr("cx", 0)
+            .attr("cy", 0);
+
+          gLegend
+            .append("text")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("fill", "white")
+            .style("font-size", "9px")
+            .text("rank");
+
+          gLegend
+            .append("text")
+            .attr("x", -60)
+            .attr("y", 24)
+            .text("BoardGameGeek Rank")
+            .style("font-size", "12px");
+        }
+
+        const ySqrt = d3
+          .scaleSqrt()
+          .domain([0, d3.max(data, (d) => d3.max(games, (g) => d[g]))])
+          .range([heightC, 0]);
+
+        const yLog = d3
+          .scaleLog()
+          .domain([
+            1,
+            d3.max(data, (d) => d3.max(games, (g) => Math.max(1, d[g]))),
+          ])
+          .range([heightC, 0]);
+
+        drawChart(
+          "svg-c-1",
+          "Number of Ratings 2016–2020 (Square root Scale)",
+          ySqrt,
+          "y-axis-c-1",
+          "x-axis-c-1",
+          "lines-c-1",
+          "symbols-c-1",
+          "legend-c-1"
+        );
+
+        drawChart(
+          "svg-c-2",
+          "Number of Ratings 2016–2020 (Log Scale)",
+          yLog,
+          "y-axis-c-2",
+          "x-axis-c-2",
+          "lines-c-2",
+          "symbols-c-2",
+          "legend-c-2"
+        );
+      });
+    </script>
+    <div id="signature">npallapangkul3</div>
   </body>
 </html>
