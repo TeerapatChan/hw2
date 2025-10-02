@@ -82,7 +82,6 @@
         const y = d3
           .scaleLinear()
           .domain([0, d3.max(data, (d) => d3.max(games, (gName) => d[gName]))])
-          .nice()
           .range([height, 0]);
 
         const color = d3
@@ -148,17 +147,16 @@
         const gYAxisA = gA.append("g").attr("id", "y-axis-a");
         gYAxisA.call(d3.axisLeft(y));
 
-        svgA
+        gYAxisA
           .append("text")
-          .attr("id", "y-axis-label-a")
+          .attr("x", -height / 2)
+          .attr("y", -60)
           .attr("transform", "rotate(-90)")
-          .attr("x", -(height + margin.top + margin.bottom) / 2)
-          .attr("y", 40)
+          .attr("text-anchor", "middle")
           .attr("class", "label")
           .text("Num of Ratings");
       });
-    </script>
-    <script>
+
       const svgB = d3.select("#svg-b"),
         widthB = 1000,
         heightB = 600,
@@ -200,7 +198,6 @@
         const y = d3
           .scaleLinear()
           .domain([0, d3.max(data, (d) => d3.max(games, (g) => d[g]))])
-          .nice()
           .range([heightB, 0]);
 
         const color = d3
@@ -345,8 +342,6 @@
           .text("BoardGameGeek Rank")
           .style("font-size", "12px");
       });
-    </script>
-    <script>
       const widthC = 1000,
         heightC = 600,
         marginC = { top: 50, right: 120, bottom: 50, left: 100 };
