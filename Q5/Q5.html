@@ -226,7 +226,6 @@
         const rectW = 24;
         const rectH = 24;
         const gap = 8;
-        const fmt = d3.format(".2f");
 
         for (let i = 0; i < n; i++) {
           const y = legendY + i * (rectH + gap);
@@ -241,7 +240,8 @@
 
           const a = boundaries[i];
           const b = boundaries[i + 1];
-          const label = a == null || b == null ? "—" : `${fmt(a)} to ${fmt(b)}`;
+          const label =
+            a == null || b == null ? "—" : `${a.toFixed(2)} - ${b.toFixed(2)}`;
           legendG
             .append("text")
             .attr("x", legendX + rectW + 8)
