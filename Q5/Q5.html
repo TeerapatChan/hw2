@@ -5,6 +5,9 @@
     <title>Q5 — Wildlife Trafficking Choropleth</title>
     <script src="../lib/d3.v5.min.js"></script>
     <script src="../lib/d3-tip.min.js"></script>
+    <script src="../lib/d3-geo-projection.v2.min.js"></script>
+    <script src="../lib/d3-legend.min.js"></script>
+    <script src="../lib/topojson.v2.min.js"></script>
     <style>
       body {
         font-family: Arial, Helvetica, sans-serif;
@@ -28,19 +31,15 @@
         display: block;
       }
       .country {
-        stroke: #000;
+        stroke: white;
         stroke-width: 0.4px;
         cursor: pointer;
       }
       .no-data {
-        fill: #d3d3d3;
+        fill: gray;
       }
       #legend text {
         font-size: 12px;
-      }
-      .legend-rect {
-        stroke: #666;
-        stroke-width: 0.5px;
       }
       #gt {
         margin-top: 8px;
@@ -61,7 +60,7 @@
     <h2>Wildlife Trafficking Incidents by Country</h2>
 
     <div id="controls">
-      Year:
+      Select Year:
       <select id="yearDropdown"></select>
     </div>
 
@@ -70,7 +69,7 @@
       <g id="legend"></g>
     </svg>
 
-    <div id="gt">GT Username: <strong id="gtname">gburdell3</strong></div>
+    <div id="gt">GT Username: <strong id="gtname">npallapangkul3</strong></div>
 
     <script>
       const svg = d3.select("#choropleth");
@@ -79,32 +78,31 @@
 
       const LEGEND_WIDTH = 180;
       const COLOR_LIST = ["#feedde", "#fdbe85", "#fd8d3c", "#d94701"];
-      const NO_DATA_COLOR = "#d3d3d3";
+      const NO_DATA_COLOR = "gray";
 
       var projection = d3.geoNaturalEarth1();
       var path = d3.geoPath().projection(projection);
 
       let colorScale = d3.scaleQuantile().range(COLOR_LIST);
 
+      console.log(colorScale);
       const tip = d3
         .tip()
         .attr("class", "d3-tip")
         .offset([-8, 0])
         .html((d) => {
-          const cname = d.properties?.name || "Unknown";
+          const cname = d.properties?.name || "N/A";
           const info = currentYearData[cname];
-          return `<strong>${cname}</strong><br/>
-          Year: ${selectedYear}<br/>
-          Incidents: ${info ? info.incidents : "No data"}<br/>
-          Avg Fine (USD): ${
-            info && info.avgFine != null
-              ? "$" + (+info.avgFine).toFixed(2)
-              : "No data"
+          return `<strong>Country: </strong>${cname}<br/>
+          <strong>Year: </strong>${selectedYear}<br/>
+          <strong>Number of Incidents: </strong>${
+            info ? info.incidents : "N/A"
           }<br/>
-          Avg Imprisonment (yrs): ${
-            info && info.avgImpr != null
-              ? (+info.avgImpr).toFixed(2) + " yrs"
-              : "No data"
+          <strong>Average Fine (USD): </strong>${
+            info && info.avgFine != null ? (+info.avgFine).toFixed(2) : "N/A"
+          }<br/>
+          <strong>Average Imprisonment (Years): </strong>${
+            info && info.avgImpr != null ? (+info.avgImpr).toFixed(2) : "N/A"
           }`;
         });
       svg.call(tip);
@@ -191,10 +189,12 @@
           .on("mouseover", function (d) {
             tip.show(d, this);
             d3.select(this).raise().style("stroke-width", 1);
+            d3.select(this).raise().style("stroke", "black");
           })
           .on("mouseout", function (d) {
             tip.hide(d, this);
             d3.select(this).style("stroke-width", 0.4);
+            d3.select(this).style("stroke", "white");
           })
           .merge(countries)
           .transition()
@@ -207,47 +207,18 @@
           });
 
         countries.exit().remove();
+        const legend = d3
+          .legendColor()
+          .shapeWidth(20)
+          .shapeHeight(20)
+          .orient("vertical")
+          .labelFormat(d3.format(".2f"))
+          .scale(colorScale);
 
-        drawLegend(domainForScale, colorScale);
-      }
-
-      function drawLegend(domainVals, scale) {
-        const legendG = svg.select("#legend");
-        legendG.selectAll("*").remove();
-
-        const n = COLOR_LIST.length;
-        const quantiles = scale.quantiles ? scale.quantiles() : [];
-        const minVal = d3.min(domainVals);
-        const maxVal = d3.max(domainVals);
-        const boundaries = [minVal].concat(quantiles).concat([maxVal]);
-
-        const legendX = width - LEGEND_WIDTH + 20;
-        const legendY = 40;
-        const rectW = 24;
-        const rectH = 24;
-        const gap = 8;
-
-        for (let i = 0; i < n; i++) {
-          const y = legendY + i * (rectH + gap);
-          legendG
-            .append("rect")
-            .attr("x", legendX)
-            .attr("y", y)
-            .attr("width", rectW)
-            .attr("height", rectH)
-            .attr("class", "legend-rect")
-            .style("fill", COLOR_LIST[i]);
-
-          const a = boundaries[i];
-          const b = boundaries[i + 1];
-          const label =
-            a == null || b == null ? "—" : `${a.toFixed(2)} - ${b.toFixed(2)}`;
-          legendG
-            .append("text")
-            .attr("x", legendX + rectW + 8)
-            .attr("y", y + rectH / 2 + 5)
-            .text(label);
-        }
+        svg
+          .select("#legend")
+          .attr("transform", `translate(${width - LEGEND_WIDTH + 20},40)`)
+          .call(legend);
       }
     </script>
   </body>
